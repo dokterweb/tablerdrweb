@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\SantriController;
 use App\Http\Controllers\UstadzController;
 use App\Http\Controllers\KelasnyaController;
 use App\Http\Controllers\KelompokController;
@@ -42,3 +43,10 @@ Route::get('ustadzs/{ustadz}/edit', [UstadzController::class, 'edit'])->middlewa
 Route::put('ustadzs/{ustadz}', [UstadzController::class, 'update'])->middleware('role:admin')->name('ustadzs.update');
 Route::get('ustadzs/{ustadz}', [UstadzController::class, 'show'])->middleware('role:admin')->name('ustadzs.show');
 Route::delete('ustadzs/{ustadz}', [UstadzController::class, 'destroy'])->middleware('role:admin')->name('ustadzs.destroy');
+
+Route::get('/santris',[SantriController::class, 'index'])->middleware('role:admin')->name('santris');
+Route::post('santris/store', [SantriController::class, 'store'])->middleware('role:admin')->name('santris.store');
+Route::get('santris/{santri}/edit', [SantriController::class, 'edit'])->middleware('role:admin')->name('santris.edit');
+Route::put('santris/{santri}', [SantriController::class, 'update'])->middleware('role:admin')->name('santris.update');
+Route::get('santris/{santri}', [SantriController::class, 'show'])->middleware('role:admin')->name('santris.show');
+Route::delete('santris/{santri}', [SantriController::class, 'destroy'])->middleware('role:admin')->name('santris.destroy');

@@ -11,4 +11,9 @@ class Kelasnya extends Model
     use HasFactory, SoftDeletes;
     protected $fillable=['nama_kelas'];
 
+    public function santris()
+    {
+        return $this->hasMany(Santri::class);
+    }
+
 }

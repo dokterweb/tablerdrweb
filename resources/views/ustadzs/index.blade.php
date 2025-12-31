@@ -114,12 +114,12 @@
                                         onclick="showUstadzDetails({{ $p->id }})">
                                     Show
                                 </button>
-                                <a href="{{route('ustadzs.edit',$p->id)}}" class="btn btn-sm btn-info"><i class="far fa-edit"></i></a>
+                                <a href="{{route('ustadzs.edit',$p->id)}}" class="btn btn-sm btn-info">Edit</a>
                                 <form method="POST" action="{{ route('ustadzs.destroy', $p->id) }}" style="display: inline;" id="delete-form-{{ $p->id }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-danger" onclick="deleteConfirmation({{ $p->id }})">
-                                        <i class="fas fa-trash-alt"></i> 
+                                        Del
                                     </button>
                                 </form>
                             </td>
@@ -152,7 +152,7 @@
             <!-- Konten Ustadz akan dimuat melalui JavaScript -->
             <div class="row">
                 <div class="col-md-4">
-                    <img src="path_to_image" alt="Avatar" class="img-fluid rounded-circle">
+                    <img id="ustadz-avatar" src="" alt="Avatar" class="img-fluid rounded-circle">
                 </div>
                 <div class="col-md-8">
                     <table class="table table-vcenter card-table">
@@ -186,7 +186,7 @@
         </div>
       </div>
     </div>
-  </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -215,10 +215,10 @@
                 $('#ustadz-email').text(response.email);
                 
                 // Menampilkan avatar jika ada
-                if (response.avatar) {
-                    $('#ustadz-details img').attr('src', response.avatar);
+                 if (response.avatar) {
+                    $('#ustadz-avatar').attr('src', response.avatar); // Mengatur URL avatar
                 } else {
-                    $('#ustadz-details img').attr('src', '/storage/avatar/default-avatar.png');
+                    $('#ustadz-avatar').attr('src', '/storage/avatar/default-avatar.png'); // Default avatar jika tidak ada
                 }
             },
             error: function() {

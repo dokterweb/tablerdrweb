@@ -3,19 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Ustadz;
+use App\Models\Santri;
+use App\Models\Kelasnya;
 use App\Models\Kelompok;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
-class UstadzController extends Controller
+class SantriController extends Controller
 {
     public function index()
     {
-        $ustadzs = Ustadz::all();
+        $santris = Santri::all();
         $kelompoks = Kelompok::all();
-        return view('ustadzs.index',compact('ustadzs','kelompoks'));
+        $kelasnyas = Kelasnya::all();
+        return view('santris.index',compact('santris','kelompoks','kelasnyas'));
     }
 
     public function store(Request $request)
@@ -24,6 +26,7 @@ class UstadzController extends Controller
          $validated = $request->validate([
             'name'          => 'required|string|max:255',
             'kelompok_id'   => 'required','integer',
+            'kelas_id'      => 'required','integer',
             'kelamin'       => 'required|in:laki-laki,perempuan',
             'email'         => 'required|email|unique:users,email',
             'password'      => 'required|string|min:6',
@@ -49,128 +52,136 @@ class UstadzController extends Controller
                 ]);
     
                
-                $user->assignRole('ustadz');
+                $user->assignRole('siswa');
     
-                // 4. Simpan ke tabel Ustadz
-                Ustadz::create([
+                // 4. Simpan ke tabel santri
+                Santri::create([
                     'user_id'       => $user->id,
                     'kelompok_id'   => $validated['kelompok_id'],
+                    'kelas_id'      => $validated['kelas_id'],
                     'kelamin'       => $validated['kelamin'],
                 ]);
             });
     
             // 5. Redirect dengan flash message (dipakai SweetAlert2 di view)
             return redirect()
-                ->route('ustadzs')
-                ->with('success', 'Data Ustadz berhasil disimpan!');
+                ->route('santris')
+                ->with('success', 'Data santri berhasil disimpan!');
     
         } catch (\Exception $e) {
             return redirect()
-                ->route('ustadzs')
+                ->route('santris')
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
-    public function edit(Ustadz $ustadz)
+    public function edit(Santri $santri)
     {
-        $ustadzview = Ustadz::all();
+        $santriView = Santri::all();
         $kelompoks = Kelompok::all();
-        return  view('ustadzs.edit',compact('ustadzview','ustadz','kelompoks'));
+        $kelasnyas = Kelasnya::all();
+        return view('santris.edit',compact('santriView','kelompoks','kelasnyas','santri'));
     }
 
-    public function update(Request $request, Ustadz $ustadz)
+    public function update(Request $request, Santri $santri)
     {
-        // Validasi input
+        // 1. Validasi input
         $validated = $request->validate([
             'name'          => 'required|string|max:255',
             'kelompok_id'   => 'required|integer',
+            'kelas_id'      => 'required|integer',
             'kelamin'       => 'required|in:laki-laki,perempuan',
-            'email'         => 'required|email|unique:users,email,' . $ustadz->user_id,
+            'email'         => 'required|email|unique:users,email,' . $santri->user_id,  // Mengabaikan validasi untuk email yang sama
             'password'      => 'nullable|string|min:6', // Password opsional
             'avatar'        => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048', // Avatar opsional
         ]);
 
         try {
-            DB::transaction(function () use ($validated, $ustadz, $request) {
+            DB::transaction(function () use ($validated, $request, $santri) {
 
-                // Tentukan avatar: jika tidak ada avatar yang diunggah, set ke default
-                $avatarPath = $ustadz->user->avatar ?? 'avatar/default-avatar.png';
+                // Tentukan avatar: jika tidak ada avatar yang diunggah, set ke avatar lama
+                $avatarPath = $santri->user->avatar ?? 'avatar/default-avatar.png';
 
                 // Jika ada avatar yang diunggah, simpan gambar tersebut
                 if ($request->hasFile('avatar')) {
+                    // Hapus avatar lama jika ada
+                    if ($santri->user->avatar && file_exists(public_path('storage/' . $santri->user->avatar))) {
+                        unlink(public_path('storage/' . $santri->user->avatar)); // Menghapus file avatar lama
+                    }
+                    // Simpan avatar baru
                     $avatarPath = $request->file('avatar')->store('avatars', 'public');
                 }
 
                 // 2. Update data user
-                $ustadz->user->update([
+                $santri->user->update([
                     'name'      => $validated['name'],
                     'email'     => $validated['email'],
                     'avatar'    => $avatarPath,
-                    'password'  => $validated['password'] ? Hash::make($validated['password']) : $ustadz->user->password, // Jika password kosong, gunakan password lama
+                    'password'  => $validated['password'] ? Hash::make($validated['password']) : $santri->user->password, // Jika password kosong, gunakan password lama
                 ]);
 
-                // 3. Update data ustadz
-                $ustadz->update([
-                    'kelompok_id'   => $validated['kelompok_id'],
-                    'kelamin'       => $validated['kelamin'],
+                // 3. Update data santri
+                $santri->update([
+                    'kelompok_id' => $validated['kelompok_id'],
+                    'kelas_id'    => $validated['kelas_id'],
+                    'kelamin'     => $validated['kelamin'],
                 ]);
             });
 
-            // Redirect dengan flash message
-            return redirect()->route('ustadzs')
-                ->with('success', 'Data Ustadz berhasil diperbarui!');
+            // 4. Redirect dengan flash message sukses
+            return redirect()
+                ->route('santris')
+                ->with('success', 'Data Santri berhasil diperbarui!');
 
         } catch (\Exception $e) {
-            return redirect()->route('ustadzs')
+            // Jika terjadi kesalahan
+            return redirect()
+                ->route('santris')
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
-
 
     public function show($id)
     {
         // Ambil data Ustadz berdasarkan ID
-        $ustadz = Ustadz::with('user', 'kelompok')->findOrFail($id);
+        $santri = Santri::with('user', 'kelasnya', 'kelompok')->findOrFail($id);
 
         // Mengirim data dalam bentuk JSON
         return response()->json([
-            'name' => $ustadz->user->name,
-            'kelompok' => $ustadz->kelompok->nama_kelompok,
-            'kelamin' => $ustadz->kelamin,
-            'email' => $ustadz->user->email,
-            'avatar' => asset('storage/' . ($ustadz->user->avatar ?: 'avatar/default-avatar.png'))
+            'name' => $santri->user->name,
+            'kelasnya' => $santri->kelasnya->nama_kelas,
+            'kelompok' => $santri->kelompok->nama_kelompok,
+            'kelamin' => $santri->kelamin,
+            'email' => $santri->user->email,
+            'avatar' => asset('storage/' . ($santri->user->avatar ?: 'avatar/default-avatar.png'))
         ]);
     }
-
 
     public function destroy($id)
     {
         try {
-            // Temukan data Ustadz berdasarkan ID
-            $ustadz = Ustadz::with('user')->findOrFail($id);
+            // Temukan data Santri berdasarkan ID
+            $santri = Santri::with('user')->findOrFail($id);
 
             // Hapus avatar jika ada (Opsional)
-            if ($ustadz->user->avatar && file_exists(public_path('storage/' . $ustadz->user->avatar))) {
-                unlink(public_path('storage/' . $ustadz->user->avatar)); // Menghapus file avatar
+            if ($santri->user->avatar && file_exists(public_path('storage/' . $santri->user->avatar))) {
+                unlink(public_path('storage/' . $santri->user->avatar)); // Menghapus file avatar
             }
 
-            // Hapus data Ustadz
-            $ustadz->delete();
+            // Soft delete data Santri
+            $santri->delete();
 
-            // Hapus data User terkait
-            $ustadz->user->delete();
+            // Soft delete data User terkait
+            $santri->user->delete();
 
             // Redirect dengan flash message sukses
-            return redirect()->route('ustadzs')
-                ->with('success', 'Data Ustadz berhasil dihapus!');
+            return redirect()->route('santris')
+                ->with('success', 'Data Santri berhasil dihapus!');
         } catch (\Exception $e) {
             // Jika terjadi kesalahan
-            return redirect()->route('ustadzs')
+            return redirect()->route('santris')
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
-
-    
-
 
 }

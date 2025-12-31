@@ -88,6 +88,9 @@
                 <a class="dropdown-item {{request()->routeIs('ustadzs')?'active':''}}" href="{{route('ustadzs')}}">
                   Ustadz
                 </a>
+                <a class="dropdown-item {{request()->routeIs('santris')?'active':''}}" href="{{route('santris')}}">
+                  Santri
+                </a>
               </div>
             </li>
           </ul>
